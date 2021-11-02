@@ -1,14 +1,30 @@
 import org.jetbrains.compose.compose
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.5.31"
+    kotlin("multiplatform") version "1.5.31"
     id("org.jetbrains.compose") version "1.0.0-beta5"
 }
 
-group = "dev.burnoo"
-version = "1.0"
+println(getTarget())
+
+kotlin {
+    jvm()
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(compose.runtime)
+            }
+        }
+        named("jvmTest") {
+            dependencies {
+                implementation(compose.uiTestJUnit4)
+                //implementation(getSkiaDependency()) // WORKAROUND
+                implementation(compose.material)
+            }
+        }
+        named("jvmMain")
+    }
+}
 
 repositories {
     google()
@@ -16,22 +32,26 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
-dependencies {
-    implementation(compose.desktop.currentOs)
-    testImplementation(compose.uiTestJUnit4)
+fun getSkiaDependency() : String {
+    val target = getTarget()
+    val version = "0.5.9"
+    return "org.jetbrains.skiko:skiko-jvm-runtime-$target:$version"
 }
 
-tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "11"
-}
-
-compose.desktop {
-    application {
-        mainClass = "MainKt"
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "JvmTest"
-            packageVersion = "1.0.0"
-        }
+fun getTarget(): String {
+    val osName = System.getProperty("os.name")
+    val targetOs = when {
+        osName == "Mac OS X" -> "macos"
+        osName.startsWith("Win") -> "windows"
+        osName.startsWith("Linux") -> "linux"
+        else -> error("Unsupported OS: $osName")
     }
+
+    val targetArch = when (val osArch = System.getProperty("os.arch")) {
+        "x86_64", "amd64" -> "x64"
+        "aarch64" -> "arm64"
+        else -> error("Unsupported arch: $osArch")
+    }
+
+    return "${targetOs}-${targetArch}"
 }
