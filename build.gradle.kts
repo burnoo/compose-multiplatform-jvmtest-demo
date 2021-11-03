@@ -5,7 +5,7 @@ plugins {
     id("org.jetbrains.compose") version "1.0.0-beta6-dev446"
 }
 
-println(getTarget())
+println("Target: ${getTarget()}")
 
 kotlin {
     jvm()
